@@ -1,0 +1,21 @@
+@WebhookSystem_HostAddress = http://localhost:5000
+
+### Create a Webhook Subscription
+POST {{WebhookSystem_HostAddress}}/webhooks/subscriptions
+Content-Type: application/json
+{
+  "webhookUrl": "https://webhook.site/7de1fc18-c18a-41c4-84fa-22a9c46a61a7",
+  "eventType": "order.created"
+}
+
+### Get Orders
+Get {{WebhookSystem_HostAddress}}/orders
+Accept: application/json
+
+### Create an Order
+POST {{WebhookSystem_HostAddress}}/orders
+Content-Type: application/json
+{
+  "customerName": "Steve rzag",
+  "amount": 1000
+}
