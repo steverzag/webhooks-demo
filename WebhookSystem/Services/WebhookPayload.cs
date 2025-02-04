@@ -1,11 +1,11 @@
 ﻿namespace Webhooks.API.Services
 {
-	public class WebhookPayload<T>
+	public class WebhookPayload
 	{
 		public Guid Id { get; set; }
 		public string EventType { get; set; }
 		public Guid SubscriptionId { get; set; }
 		public DateTime TimeStamp { get; set; }
-		public T Data { get; set; }
+		public object Data { get; set; }
 	}
 }

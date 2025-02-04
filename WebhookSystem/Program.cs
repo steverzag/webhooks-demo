@@ -1,4 +1,6 @@
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Threading.Channels;
 using Webhooks.API.Data;
 using Webhooks.API.Extensions;
@@ -12,21 +14,40 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddScoped<WebhookDispatcher>();
-builder.Services.AddSingleton(_ =>
-{
-	return Channel.CreateBounded<WebhookDispatch>(new BoundedChannelOptions(100)
-	{ 
-		FullMode = BoundedChannelFullMode.Wait
-	});
-});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseNpgsql(builder.Configuration.GetConnectionString("webhooks")));
 
-builder.Services.AddHostedService<WebhookProcessor>();
+//builder.Services.AddHostedService<WebhookProcessor>();
 
+//builder.Services.AddSingleton(_ =>
+//{
+//	return Channel.CreateBounded<WebhookDispatch>(new BoundedChannelOptions(100)
+//	{
+//		FullMode = BoundedChannelFullMode.Wait
+//	});
+//});
+
+builder.Services.AddMassTransit(busConfig =>
+{
+	busConfig.SetKebabCaseEndpointNameFormatter();
+	busConfig.AddConsumer<WebhookDispatchedConsumer>();
+	busConfig.AddConsumer<WebhookTriggeredConsumer>();
+
+	busConfig.UsingRabbitMq((context, config) =>
+	{
+		config.Host(builder.Configuration.GetConnectionString("rabbitmq"));
+		config.ConfigureEndpoints(context);
+	});
+});
 builder.Services.AddOpenTelemetry()
-	.WithTracing(tracing => tracing.AddSource(DiagnosticConfig.Source.Name));
+	.WithTracing(tracing =>
+	{
+		tracing.AddSource(DiagnosticConfig.Source.Name)
+		.AddSource(MassTransit.Logging.DiagnosticHeaders.DefaultListenerName)
+		.AddNpgsql();
+	});
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -37,20 +58,20 @@ app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+	app.MapOpenApi();
 
 	await app.ApplyMigrationsAsync();
 }
 
 app.UseHttpsRedirection();
 
-app.MapPost("/orders", 
-	async (CreateOrderRequest request, 
+app.MapPost("/orders",
+	async (CreateOrderRequest request,
 	AppDbContext dbContext,
 	WebhookDispatcher webhookDispatcher) =>
 {
 
-    var order = new Order(Guid.NewGuid(), request.CustomerName, request.Amount, DateTime.UtcNow);
+	var order = new Order(Guid.NewGuid(), request.CustomerName, request.Amount, DateTime.UtcNow);
 	dbContext.Orders.Add(order);
 	await dbContext.SaveChangesAsync();
 
@@ -78,5 +99,5 @@ app.Run();
 
 internal record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+	public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
 }
