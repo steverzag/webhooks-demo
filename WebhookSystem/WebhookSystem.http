@@ -4,7 +4,7 @@
 POST {{WebhookSystem_HostAddress}}/webhooks/subscriptions
 Content-Type: application/json
 {
-  "webhookUrl": "",
+  "webhookUrl": "https://webhook.site/42b2ad76-150f-4d4b-b503-69ab6587fc82",
   "eventType": "order.created"
 }
 
@@ -16,6 +16,6 @@ Accept: application/json
 POST {{WebhookSystem_HostAddress}}/orders
 Content-Type: application/json
 {
-  "customerName": "John Doe",
-  "amount": 1000
+  "customerName": "Christina Aguilera",
+  "amount": 2500
 }

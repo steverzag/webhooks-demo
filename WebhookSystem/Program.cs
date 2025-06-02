@@ -18,21 +18,9 @@ builder.Services.AddScoped<WebhookDispatcher>();
 builder.Services.AddDbContext<AppDbContext>(options =>
 	options.UseNpgsql(builder.Configuration.GetConnectionString("webhooks")));
 
-//builder.Services.AddHostedService<WebhookProcessor>();
-
-//builder.Services.AddSingleton(_ =>
-//{
-//	return Channel.CreateBounded<WebhookDispatch>(new BoundedChannelOptions(100)
-//	{
-//		FullMode = BoundedChannelFullMode.Wait
-//	});
-//});
-
 builder.Services.AddMassTransit(busConfig =>
 {
 	busConfig.SetKebabCaseEndpointNameFormatter();
-	busConfig.AddConsumer<WebhookDispatchedConsumer>();
-	busConfig.AddConsumer<WebhookTriggeredConsumer>();
 
 	busConfig.UsingRabbitMq((context, config) =>
 	{
@@ -40,6 +28,7 @@ builder.Services.AddMassTransit(busConfig =>
 		config.ConfigureEndpoints(context);
 	});
 });
+
 builder.Services.AddOpenTelemetry()
 	.WithTracing(tracing =>
 	{
